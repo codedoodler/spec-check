@@ -1,41 +1,84 @@
 # Roadmap & status
 
-Honest assessment. See `README.html` for the visual status table.
+Honest assessment of where the project is against the [vision](VISION.md). Phases are
+roughly ordered; none is a prerequisite for using the stage before it.
 
-## Works today
+## Where it is today (P0 — working)
 
 | Area | State |
 |------|-------|
-| Requirement extraction (spec docs, `AGENTS.md`, `.cursorrules`, `[REQ]` tags) | working |
-| Deterministic check registry (`checks/`) | working |
-| LLM judge (diff + full-source modes) | working |
-| Evidence verifier (contradiction detection) | working |
-| Browsable UI (`server.py`) | working |
-| Pre-commit hook | working |
-| Regression detector (`regress.py`) | working |
-| Alerts (Linear / webhook) | code complete, needs a live key/webhook |
+| Requirement extraction from spec docs, `AGENTS.md`, `.cursorrules`, `[REQ]` notes | ✅ |
+| Deterministic checks (`checks/`, tiny `run(root)` functions) | ✅ |
+| LLM judge tier (optional; degrades gracefully without a key) | ✅ |
+| Evidence verifier (flags judge verdicts the source contradicts) | ✅ |
+| Browsable UI, JSON output | ✅ |
+| Pre-commit gate + regression alert | ✅ |
+| Bundled example + tests + CI workflow | ✅ |
 
-## Known limits
+This is a **single-repo, single-spec** conformance checker. The vision is the loop
+around it.
 
-- Topic auto-classification is keyword-based and rough.
-- The judge batches requirements; very large requirement sets may need scoping
-  (`--ids`, `--tier`, `sweep --source`).
-- No incremental cache — each audit re-reads the source.
-- Provenance is read from the doc text; there is no git-blame integration yet.
+## P1 — The requirements model
 
-## Roadmap
+- [x] Four tiers (aspirational → principles → component → testable)
+- [x] `what` / `why` / `check` / `source` on every requirement
+- [x] importance + status legends
+- [ ] A machine-readable schema for the model (so other tools can read/write it)
+- [ ] Validation: flag any active requirement whose `check` can't be answered yes/no
 
-- **git-blame provenance** — attribute a requirement to the commit/review that set it.
-- **Auto-rescan on file change** — the UI currently scans once at startup.
-- **Deeper model routing** — cheap model for easy requirements, strong model for
-  semantic ones.
-- **More shipped checks** — a small generic library (licence headers, file-size
-  guards, docstring coverage, dependency pinning).
-- **Native agent integration** — expose the audit as an MCP tool so an agent can
-  call it mid-task.
+## P2 — Ingest everything
 
-## Non-goals
+- [x] Markdown specs · `AGENTS.md` · `.cursorrules` · `[REQ]` notes
+- [ ] Meeting recordings / transcripts
+- [ ] Issue trackers
+- [ ] Email, team chat, discussion boards
+- [ ] PRDs, ADRs, spreadsheets, slide decks in-repo
+- [ ] Continuous mode: new source → re-extract, merge, **flag what changed**
+- [ ] `[REQ]` vs `[INTENT]` tagging (intent = the requirement nobody wrote down)
 
-- Running your tests or building your code.
-- Replacing type checkers or linters — it checks *your* design intent, not language rules.
-- A hosted service — this is a local, dependency-free tool.
+## P3 — The spec checks itself
+
+- [ ] Conflict detection: contradiction · supersession · duplicate · ambiguity ·
+      orphan · staleness
+- [ ] Precedence resolution (recent + authority wins; supersede, never delete)
+- [ ] Escalation of what the rule can't settle (open questions)
+- [ ] Derived priority ranking: importance × tier × dependencies × violation risk
+- [ ] A conflict report a human can act on
+
+## P4 — Enforcement on every change
+
+- [x] Pre-commit gate (block on critical failure)
+- [x] Regression alert (the "passing Monday, failing Wednesday" case)
+- [ ] Run conformance on the **diff** of a pull request / push
+- [ ] Block as a required status check (GitHub, or any CI/other resolution)
+- [ ] **Running violation tally** — per requirement, over time, trending
+- [ ] Alert routing (issue tracker, webhook, chat)
+
+## P5 — History of evolution
+
+- [ ] Record every transition: introduced → amended → superseded → retired
+- [ ] Keep source + date + reason for each transition
+- [ ] Time-travel view: "what did the design say on date X?"
+- [ ] Diff two points in time: what changed, and why
+
+## P6 — Presentation & standard
+
+- [x] Charted HTML overview, JSON output, agent-readable entry point
+- [ ] Charted views: hierarchy tree, verdict distribution, drift trend, conflict map
+- [ ] A **portable spec format** others can consume
+- [ ] A shared library of contributed checks
+- [ ] A benchmark for judge accuracy (design decision + violating code pairs)
+
+## Known rough edges
+
+- Topic auto-classification is rough.
+- git-blame provenance and auto-rescan on change are not built.
+- The judge needs a live API key; without one, the semantic tier degrades to `warn`.
+- Alerts (issue tracker / webhook) need a live key.
+
+## Not in scope (deliberately)
+
+- Not a type checker, linter, or test runner — it does not run your code.
+- Not a proof system. It is a systematic, honest audit that surfaces drift early.
+- Not project-specific: this repo stays generic, always. A project's own checks live in
+  that project. See [PROVENANCE.md](../PROVENANCE.md).

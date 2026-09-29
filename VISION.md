@@ -3,6 +3,10 @@
 *Why `spec-check` exists, and what it could become. Read this if you're deciding
 whether the idea is worth your time.*
 
+> **The full system vision** — ingesting everything, the requirements model, conflict
+> and priority resolution, enforcement on every change, and the history of evolution —
+> is in **[docs/VISION.md](docs/VISION.md)**.
+
 ## The shift nobody has tools for yet
 
 For decades, software moved slowly enough that design lived in people's heads and

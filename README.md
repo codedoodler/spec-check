@@ -111,6 +111,8 @@ generalize it are not. If that sounds interesting, you are exactly who this is f
 
 - [`docs/index.html`](docs/index.html) — visual overview with charts (open in a browser)
 - [`VISION.md`](VISION.md) — the purpose and the invitation
+- [`docs/VISION.md`](docs/VISION.md) — the full system vision (ingest → model → resolve → conform → enforce → history)
+- [`docs/REQUIREMENTS-MODEL.md`](docs/REQUIREMENTS-MODEL.md) — the requirements, conflict, and priority model
 - [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — the problem and the idea, in depth
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — pipeline, modules, JSON contracts
 - [`docs/SPEC-FORMAT.md`](docs/SPEC-FORMAT.md) — how to write requirements
