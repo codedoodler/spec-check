@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>spec-check — keep LLM-built systems honest to their design</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --border:#e3e7ee; --ink:#1b2432; --muted:#5a6472;
+    --navy:#1e3a5f; --blue:#2563eb; --green:#16a34a; --red:#b91c1c; --amber:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 24px 80px}
+
+  .hero{text-align:center;margin-bottom:40px}
+  h1{font-size:2.4rem;margin:0 0 10px;letter-spacing:-.03em;color:var(--navy)}
+  .tagline{font-size:1.2rem;color:var(--muted);max-width:640px;margin:0 auto 20px}
+  .badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .pill{font-size:.8rem;font-weight:600;padding:5px 14px;border-radius:99px;border:1px solid var(--border);background:var(--card)}
+  .pill.blue{background:#eef4ff;color:var(--blue);border-color:#d4e2ff}
+
+  .problem{background:#fdf3e2;border:1px solid #f2e0b6;border-radius:14px;padding:22px 26px;margin:0 0 32px}
+  .problem h2{font-size:1.1rem;margin:0 0 10px;color:var(--amber)}
+  .problem p{margin:0 0 8px;font-size:.95rem}
+  .problem .quote{font-style:italic;color:var(--muted);font-size:.9rem;border-left:3px solid var(--amber);padding-left:12px;margin-top:10px}
+
+  h2{font-size:1.4rem;color:var(--navy);margin:36px 0 14px;letter-spacing:-.01em}
+
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin:16px 0 8px}
+  .step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+  .step .num{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;font-size:.85rem;margin-bottom:8px}
+  .step .title{font-weight:700;font-size:.95rem;margin-bottom:4px}
+  .step .desc{font-size:.82rem;color:var(--muted)}
+  .arrow{display:flex;align-items:center;font-size:1.4rem;color:var(--muted)}
+
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+  .mode{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .mode .icon{font-size:1.6rem;margin-bottom:8px}
+  .mode h3{font-size:1rem;margin:0 0 6px;color:var(--navy)}
+  .mode p{font-size:.85rem;color:var(--muted);margin:0 0 8px}
+  .mode code{font-size:.78rem;background:#f1f5f9;padding:2px 6px;border-radius:4px;display:block;margin-top:6px}
+
+  .check-example{background:#f0fdf4;border:1px solid #b7e4c7;border-radius:12px;padding:18px;margin:16px 0}
+  .check-example pre{font-size:.8rem;margin:0;overflow-x:auto;color:#14532d}
+
+  .diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin:16px 0;text-align:center}
+
+  table{width:100%;border-collapse:collapse;font-size:.88rem;margin:16px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--green);font-weight:600}
+  .part{color:var(--amber);font-weight:600}
+  .no{color:var(--red);font-weight:600}
+
+  .footer{font-size:.8rem;color:var(--muted);margin-top:40px;border-top:1px solid var(--border);padding-top:16px;text-align:center}
+  code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.88em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>spec-check</h1>
+    <p class="tagline">Keep LLM-built systems honest to their own design — before they drift.</p>
+    <div class="badge-row">
+      <span class="pill blue">scan → check → alert</span>
+      <span class="pill">stdlib only · no deps</span>
+      <span class="pill">MIT license</span>
+    </div>
+  </div>
+
+  <div class="problem">
+    <h2>The problem</h2>
+    <p>LLM agents can change <em>anything</em> at any time — including the parts you thought were settled. A system that passed its design review on Monday can silently violate it on Wednesday, because the model re-derived a value it should have fetched, or re-architected a piece it was told to leave alone.</p>
+    <p>Conventional linters and type checkers catch <strong>syntax</strong> drift. They don't catch <strong>design</strong> drift.</p>
+    <p class="quote">"Going forward let's confirm things manually rather than relying on AI entirely… we need tests for every claim, because the LLM can change anything at any time."</p>
+  </div>
+
+  <h2>The big idea</h2>
+  <div class="flow">
+    <div class="step">
+      <div class="num">1</div>
+      <div class="title">Scan</div>
+      <div class="desc">Extract design requirements from wherever they live — architecture docs, AGENTS.md, meeting notes, conventions files.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="num">2</div>
+      <div class="title">Check</div>
+      <div class="desc">Run mechanical checks — each requirement becomes a small, deterministic check that inspects the code.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="num">3</div>
+      <div class="title">Alert</div>
+      <div class="desc">Flag regressions — when a requirement that was passing starts failing, tell a human (or an agent).</div>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <svg width="820" height="200" viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="spec-check pipeline">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 z" fill="#5a6472"/>
+        </marker>
+      </defs>
+      <!-- project directory -->
+      <rect x="20" y="70" width="140" height="60" rx="10" fill="#eef4ff" stroke="#2563eb" stroke-width="2"/>
+      <text x="90" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#1e3a5f">project dir</text>
+      <text x="90" y="114" text-anchor="middle" font-size="11" fill="#5a6472">docs / AGENTS.md</text>
+      <!-- extract -->
+      <rect x="220" y="70" width="150" height="60" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="295" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">extract reqs</text>
+      <text x="295" y="114" text-anchor="middle" font-size="11" fill="#5a6472">What / Why / Check</text>
+      <!-- check registry -->
+      <rect x="430" y="70" width="150" height="60" rx="10" fill="#fdf3e2" stroke="#b45309" stroke-width="2"/>
+      <text x="505" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">check</text>
+      <text x="505" y="114" text-anchor="middle" font-size="11" fill="#5a6472">mechanical checks</text>
+      <!-- alert -->
+      <rect x="640" y="70" width="150" height="60" rx="10" fill="#fdecec" stroke="#b91c1c" stroke-width="2"/>
+      <text x="715" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#991b1b">alert</text>
+      <text x="715" y="114" text-anchor="middle" font-size="11" fill="#5a6472">regression → notify</text>
+      <!-- arrows -->
+      <line x1="160" y1="100" x2="215" y2="100" stroke="#5a6472" stroke-width="2" marker-end="url(#arr)"/>
+      <line x1="370" y1="100" x2="425" y2="100" stroke="#5a6472" stroke-width="2" marker-end="url(#arr)"/>
+      <line x1="580" y1="100" x2="635" y2="100" stroke="#5a6472" stroke-width="2" marker-end="url(#arr)"/>
+    </svg>
+  </div>
+
+  <h2>Three ways to run it</h2>
+  <div class="modes">
+    <div class="mode">
+      <div class="icon">🖥️</div>
+      <h3>Interactive UI</h3>
+      <p>Browse requirements, run audits, filter by tier/topic/importance, see provenance, delete superseded items.</p>
+      <code>python3 server.py --root /path/to/project</code>
+    </div>
+    <div class="mode">
+      <div class="icon">🔒</div>
+      <h3>Pre-commit hook</h3>
+      <p>Blocks a commit when a critical (tier A/B) requirement fails. Design compliance becomes a gate, not a review.</p>
+      <code>./install-hook.sh /path/to/project</code>
+    </div>
+    <div class="mode">
+      <div class="icon">🔔</div>
+      <h3>Regression alerts</h3>
+      <p>The "passing Monday, failing Wednesday" signal. Flags when a requirement silently regresses, posts to Linear or a webhook.</p>
+      <code>python3 alert.py --root /path/to/project --linear-key $KEY</code>
+    </div>
+  </div>
+
+  <h2>What a check looks like</h2>
+  <div class="check-example">
+    <pre>def run(root):
+    # inspect the project at `root`, return pass/fail/warn
+    return [{
+        "id": "D-06",
+        "label": "No hard-coded magic constants in derive files",
+        "tier": "D",           # A/B are critical, block commits
+        "status": "fail",      # pass | fail | warn
+        "detail": "0.6133 found in reasoning_plan.py"
+    }]</pre>
+  </div>
+
+  <h2>Honest status</h2>
+  <table>
+    <tr><th>Capability</th><th>Status</th><th>Notes</th></tr>
+    <tr><td>Scan a directory for requirements</td><td class="ok">working</td><td>hierarchy.md, AGENTS.md, .cursorrules, [REQ] tags</td></tr>
+    <tr><td>Check on command</td><td class="ok">working</td><td>UI buttons + pre-commit hook</td></tr>
+    <tr><td>Regression detection</td><td class="ok">working</td><td>pass→fail flagged, history saved</td></tr>
+    <tr><td>Alerts (Linear / webhook)</td><td class="part">code exists</td><td>not yet pointed at a live key or webhook</td></tr>
+    <tr><td>Auto-rescan on file change</td><td class="no">not built</td><td>scans once on startup</td></tr>
+    <tr><td>Scheduled automatic runs</td><td class="no">not built</td><td>cron recipe documented, not deployed</td></tr>
+    <tr><td>Agent alert hooks</td><td class="no">not built</td><td>webhook path exists, no agent channel</td></tr>
+  </table>
+
+  <div class="footer">
+    <code>spec-check</code> · open source · MIT license · <a href="https://github.com/codedoodler/spec-check" style="color:var(--blue)">codedoodler/spec-check</a>
+  </div>
+
+</div>
+</body>
+</html>

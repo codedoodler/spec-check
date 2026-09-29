@@ -1,0 +1,59 @@
+# spec-check
+
+> Check LLM-built systems against their own design requirements — before they drift.
+
+spec-check extracts design requirements from a project's docs (specs, `AGENTS.md`,
+`.cursorrules`, `[REQ]` notes) and checks the code still honours them, returning a
+verdict per requirement: pass, warn, fail, or **unverifiable** (the tool never guesses).
+Stdlib only, Python 3.8+. Public, MIT.
+
+- Canonical repo: https://github.com/codedoodler/spec-check
+- Language: Python (standard library only; no runtime dependencies)
+- License: MIT
+- Status: early. The point of the project is for others to extend it.
+
+## What it is / is not
+
+- IS: a linter for *design intent* — the gap type checkers, linters, and tests leave open.
+- IS NOT: a type checker, a linter, a test runner, or a proof. It does not run your code.
+- Hard rule: this repo must contain **no project-specific or internal knowledge**
+  (see PROVENANCE.md). Project-specific checks live in the project.
+
+## Getting started (for an agent or human)
+
+```
+git clone https://github.com/codedoodler/spec-check && cd spec-check
+python3 sweep.py  --root examples/target      # audit the bundled example (--json for machines)
+python3 judge.py  --root examples/target      # semantic tier (optional; needs an API key)
+python3 server.py --root examples/target      # browsable UI on :8090
+```
+
+## Key files
+
+- `server.py` — extract requirements; browsable UI
+- `sweep.py` — run everything, emit verdicts (JSON with `--json`)
+- `judge.py` — LLM judge tier (env: an OpenRouter or DeepSeek key; optional)
+- `pre_commit.py` / `install-hook.sh` — gate commits on critical requirements
+- `regress.py` / `alert.py` — the "passing Monday, failing Wednesday" signal
+- `checks/` — deterministic checks (each is a small `run(root)` function)
+- `examples/target/` — a toy project with deliberate violations
+
+## Read next
+
+- `VISION.md` — the purpose and the invitation (why this exists, where it could go)
+- `docs/OVERVIEW.md` — the problem and the idea
+- `docs/ARCHITECTURE.md` — pipeline, modules, JSON contracts
+- `docs/SPEC-FORMAT.md` — how to write requirements
+- `docs/WRITING-CHECKS.md` — how to add a deterministic check
+- `docs/LLM-GUIDE.md` — agent-oriented guide
+- `docs/IDEAS.md` — ways to extend the project
+- `CONTRIBUTING.md` — how to help
+- `docs/ROADMAP.md` — status and roadmap
+- `PROVENANCE.md` — what must never be committed here
+- `docs/index.html` — visual overview with charts (open in a browser)
+
+## Machine-readable notes
+
+- Verdicts: `{ "id", "verdict": "pass|warn|fail|unverifiable", "evidence", "source" }`
+- Run `sweep.py --json` for structured output; `judge.py --json` likewise.
+- "unverifiable" is a first-class, expected answer — do not treat it as failure.

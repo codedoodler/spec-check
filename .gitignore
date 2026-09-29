@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.audit-history.json
+.DS_Store

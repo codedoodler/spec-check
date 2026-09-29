@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>spec-check — catch design drift before it ships</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --border:#e3e7ee; --ink:#1b2432; --muted:#5a6472;
+    --accent:#2563eb; --green:#16a34a; --amber:#d97706; --red:#dc2626; --purple:#7c3aed;
+    --soft:#f0f3f8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px 80px}
+  header.hero{padding:56px 0 30px; border-bottom:1px solid var(--border)}
+  .eyebrow{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-size:40px; line-height:1.12; margin:.28em 0 .2em; letter-spacing:-.02em}
+  .lede{font-size:19px; color:var(--muted); max-width:720px}
+  .nav{margin-top:22px; display:flex; flex-wrap:wrap; gap:10px}
+  .nav a{font-size:14px; text-decoration:none; color:var(--ink); background:var(--card);
+    border:1px solid var(--border); padding:7px 12px; border-radius:999px}
+  .nav a:hover{border-color:var(--accent); color:var(--accent)}
+  h2{font-size:24px; margin:52px 0 6px; letter-spacing:-.01em}
+  h2 .n{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:10px}
+  .sub{color:var(--muted); margin:0 0 18px}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px}
+  .pill.p{background:#e7f6ec; color:var(--green)} .pill.w{background:#fdf1dc; color:var(--amber)}
+  .pill.f{background:#fdeaea; color:var(--red)}   .pill.u{background:#ece9fb; color:var(--purple)}
+  /* pipeline */
+  .pipe{display:flex; align-items:stretch; gap:0; flex-wrap:wrap}
+  .step{flex:1 1 150px; min-width:150px; background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:14px; margin:6px 4px}
+  .step .k{font-size:12px; font-weight:700; color:var(--accent); letter-spacing:.08em}
+  .step .t{font-weight:650; margin:4px 0 2px}
+  .step .d{font-size:13.5px; color:var(--muted)}
+  .arrow{align-self:center; color:#c3ccda; font-weight:700; font-size:20px; margin:0 2px}
+  /* verdict table */
+  table{width:100%; border-collapse:collapse; font-size:14.5px}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border)}
+  th{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px}
+  footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--border); color:var(--muted); font-size:14px}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:8px 16px; font-size:14.5px}
+  .kv b{font-weight:650}
+  .note{font-size:13px; color:var(--muted); margin-top:10px}
+  .quote{font-size:19px; font-style:italic; color:#334155; border-left:3px solid var(--accent);
+    padding-left:16px; margin:0 0 20px}
+  .cta{background:linear-gradient(135deg,#eef3ff,#f7f0ff); border:1px solid #dbe3f5}
+  .cta h3{margin:.1em 0 .3em}
+  .cta .row{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .btn{display:inline-block; padding:10px 16px; border-radius:10px; text-decoration:none;
+    font-weight:650; font-size:14.5px; background:var(--ink); color:#fff}
+  .btn.alt{background:#fff; color:var(--ink); border:1px solid var(--border)}
+  footer a{color:var(--accent); text-decoration:none}
+  footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Design-compliance checking</div>
+  <h1>spec-check</h1>
+  <p class="lede">Check a codebase against its own written design requirements —
+  before the two drift apart. LLM-built systems can change anything, at any time;
+  this is the linter for <em>design intent</em>.</p>
+  <div class="nav">
+    <a href="#problem">The problem</a>
+    <a href="#how">How it works</a>
+    <a href="#layers">Three layers</a>
+    <a href="#output">What you get</a>
+    <a href="#modes">Run modes</a>
+    <a href="#limits">Honest limits</a>
+    <a href="#build">Help build it</a>
+    <a href="OVERVIEW.md">Docs&nbsp;↗</a>
+  </div>
+</header>
+
+<!-- 1 · PROBLEM -->
+<h2 id="problem"><span class="n">1</span>The problem: silent design drift</h2>
+<p class="sub">A system passes its design review on Monday. By Wednesday it violates
+it — and the diff looks ordinary.</p>
+
+<div class="card">
+<svg viewBox="0 0 960 190" width="100%" role="img" aria-label="Timeline: a design decision made Monday is violated Wednesday, unnoticed">
+  <line x1="60" y1="104" x2="900" y2="104" stroke="#dbe1ea" stroke-width="3"/>
+  <!-- Monday -->
+  <circle cx="170" cy="104" r="9" fill="#16a34a"/>
+  <text x="170" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="#1b2432">Monday</text>
+  <text x="170" y="80" text-anchor="middle" font-size="12.5" fill="#5a6472">design review</text>
+  <rect x="86" y="120" width="168" height="40" rx="9" fill="#e7f6ec"/>
+  <text x="170" y="145" text-anchor="middle" font-size="13" fill="#16a34a" font-weight="650">“data layer stays thin”</text>
+  <!-- dotted between -->
+  <line x1="210" y1="104" x2="700" y2="104" stroke="#dbe1ea" stroke-width="3" stroke-dasharray="5 6"/>
+  <!-- Wednesday -->
+  <circle cx="760" cy="104" r="9" fill="#dc2626"/>
+  <text x="760" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="#1b2432">Wednesday</text>
+  <text x="760" y="80" text-anchor="middle" font-size="12.5" fill="#5a6472">a run ships</text>
+  <rect x="668" y="120" width="184" height="40" rx="9" fill="#fdeaea"/>
+  <text x="760" y="145" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="650">2,000 records embedded</text>
+  <!-- drift marker -->
+  <text x="455" y="96" text-anchor="middle" font-size="12.5" fill="#94a3b8" font-style="italic">no signal in between</text>
+</svg>
+<div class="note">Type checkers catch <b>syntax</b> drift. Linters catch <b>style</b> drift.
+Tests catch <b>behaviour</b> in the cases you thought of. None of them read the design
+decision above and check it still holds.</div>
+</div>
+
+<!-- 2 · HOW -->
+<h2 id="how"><span class="n">2</span>How it works</h2>
+<p class="sub">Turn every design decision into a checkable claim, then walk the whole list.</p>
+<div class="card">
+  <div class="pipe">
+    <div class="step"><div class="k">EXTRACT</div><div class="t">Requirements</div>
+      <div class="d">Parse specs, <span class="mono">AGENTS.md</span>, <span class="mono">.cursorrules</span>, <span class="mono">[REQ]</span> notes into what / why / check / source.</div></div>
+    <div class="arrow">▸</div>
+    <div class="step"><div class="k">CHECK</div><div class="t">Deterministic</div>
+      <div class="d">~10-line functions in <span class="mono">checks/</span>. Exact, fast, no LLM.</div></div>
+    <div class="arrow">▸</div>
+    <div class="step"><div class="k">JUDGE</div><div class="t">LLM tier</div>
+      <div class="d">A model reads each requirement against the code for the semantics.</div></div>
+    <div class="arrow">▸</div>
+    <div class="step"><div class="k">VERIFY</div><div class="t">Evidence check</div>
+      <div class="d">Cross-checks the judge; flags verdicts contradicted by the source.</div></div>
+    <div class="arrow">▸</div>
+    <div class="step"><div class="k">REPORT</div><div class="t">Verdicts</div>
+      <div class="d">Terminal · JSON · UI · pre-commit gate · regression alert.</div></div>
+  </div>
+</div>
+
+<!-- 3 · LAYERS -->
+<h2 id="layers"><span class="n">3</span>Three layers of defence</h2>
+<p class="sub">Cheap and certain first; expensive and semantic only where needed.</p>
+<div class="grid3">
+  <div class="card">
+    <span class="pill p">fastest</span>
+    <h3 style="margin:.5em 0 .2em">Deterministic checks</h3>
+    <div class="muted" style="font-size:14.5px">Rule is mechanical → a boolean over the filesystem.
+    Runs everywhere, blocks commits, costs nothing.</div>
+    <svg viewBox="0 0 220 46" width="100%" style="margin-top:14px">
+      <rect x="0" y="8" width="200" height="22" rx="6" fill="#e7f6ec"/>
+      <text x="10" y="24" font-size="12" fill="#16a34a" font-weight="650">exact · instant · offline</text>
+    </svg>
+  </div>
+  <div class="card">
+    <span class="pill w">semantic</span>
+    <h3 style="margin:.5em 0 .2em">LLM judge</h3>
+    <div class="muted" style="font-size:14.5px">Requirement needs judgment → a model reasons
+    over What / Why / Check and returns verdict + evidence.</div>
+    <svg viewBox="0 0 220 46" width="100%" style="margin-top:14px">
+      <rect x="0" y="8" width="150" height="22" rx="6" fill="#fdf1dc"/>
+      <text x="10" y="24" font-size="12" fill="#d97706" font-weight="650">covers the rest</text>
+    </svg>
+  </div>
+  <div class="card">
+    <span class="pill u">safety net</span>
+    <h3 style="margin:.5em 0 .2em">Evidence verifier</h3>
+    <div class="muted" style="font-size:14.5px">Claims "X is missing" but X is in the source?
+    The contradiction is flagged. Catches the worst hallucination.</div>
+    <svg viewBox="0 0 220 46" width="100%" style="margin-top:14px">
+      <rect x="0" y="8" width="170" height="22" rx="6" fill="#ece9fb"/>
+      <text x="10" y="24" font-size="12" fill="#7c3aed" font-weight="650">no confident fabrication</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 4 · OUTPUT -->
+<h2 id="output"><span class="n">4</span>What you get</h2>
+<p class="sub">Every requirement gets a verdict and, where possible, evidence. Illustrative run:</p>
+<div class="grid2">
+  <div class="card">
+    <svg viewBox="0 0 480 220" width="100%" role="img" aria-label="Example verdict distribution: pass 5, warn 2, fail 1, unverifiable 1">
+      <g font-size="13" fill="#1b2432">
+        <text x="0" y="22">pass</text>
+        <rect x="110" y="10" width="300" height="16" rx="4" fill="#16a34a"/>
+        <text x="420" y="23" fill="#5a6472">5</text>
+
+        <text x="0" y="62">warn</text>
+        <rect x="110" y="50" width="120" height="16" rx="4" fill="#d97706"/>
+        <text x="240" y="63" fill="#5a6472">2</text>
+
+        <text x="0" y="102">fail</text>
+        <rect x="110" y="90" width="60" height="16" rx="4" fill="#dc2626"/>
+        <text x="180" y="103" fill="#5a6472">1</text>
+
+        <text x="0" y="142">unverifiable</text>
+        <rect x="110" y="130" width="60" height="16" rx="4" fill="#7c3aed"/>
+        <text x="180" y="143" fill="#5a6472">1</text>
+      </g>
+      <text x="0" y="188" font-size="12" fill="#94a3b8">9 requirements · 1 needs a human eye</text>
+      <text x="0" y="206" font-size="12" fill="#94a3b8">“unverifiable” is a first-class answer — the tool does not guess</text>
+    </svg>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Verdict</th><th>Means</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill p">pass</span></td><td>code matches the requirement</td><td>—</td></tr>
+        <tr><td><span class="pill w">warn</span></td><td>risky, or can't be confirmed</td><td>notify</td></tr>
+        <tr><td><span class="pill f">fail</span></td><td>clearly violates it</td><td>block if tier A/B</td></tr>
+        <tr><td><span class="pill u">unverifiable</span></td><td>needs a human</td><td>report</td></tr>
+      </tbody>
+    </table>
+    <div class="note">Tier A/B failures block commits (pre-commit hook) and raise alerts.
+    C/D are reported only.</div>
+  </div>
+</div>
+
+<!-- 5 · MODES -->
+<h2 id="modes"><span class="n">5</span>Three ways to run it</h2>
+<div class="grid3">
+  <div class="card">
+    <h3 style="margin:.1em 0 .3em">Interactive</h3>
+    <div class="mono" style="font-size:13px; color:var(--muted)">python3 server.py --root …</div>
+    <p style="font-size:14.5px">Browse requirements with filters, sort, provenance; run an
+    audit and overlay results on each card. <b>:8090</b></p>
+  </div>
+  <div class="card">
+    <h3 style="margin:.1em 0 .3em">Pre-commit</h3>
+    <div class="mono" style="font-size:13px; color:var(--muted)">./install-hook.sh …</div>
+    <p style="font-size:14.5px">Blocks the commit when a critical requirement fails.
+    The moment drift would otherwise enter history.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin:.1em 0 .3em">Scheduled alert</h3>
+    <div class="mono" style="font-size:13px; color:var(--muted)">regress.py + alert.py</div>
+    <p style="font-size:14.5px">The <b>“passing Monday, failing Wednesday”</b> signal — to the
+    terminal, a Linear ticket, or a webhook.</p>
+  </div>
+</div>
+
+<!-- 6 · LIMITS -->
+<h2 id="limits"><span class="n">6</span>Honest limits</h2>
+<div class="grid2">
+  <div class="card">
+    <div class="kv">
+      <b>Not a linter</b><span class="muted">checks your design intent, not language rules</span>
+      <b>Not a test suite</b><span class="muted">it does not run your code</span>
+      <b>Not a proof</b><span class="muted">a systematic audit that surfaces drift early</span>
+      <b>Optional LLM</b><span class="muted">no key → judge degrades to <span class="pill w">warn</span>; deterministic layers still run</span>
+    </div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Area</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Extraction · checks · judge · UI · hook · regress</td><td><span class="pill p">working</span></td></tr>
+        <tr><td>Alerts (Linear / webhook)</td><td><span class="pill w">needs a live key</span></td></tr>
+        <tr><td>Topic auto-classification</td><td><span class="pill w">rough</span></td></tr>
+        <tr><td>git-blame provenance · auto-rescan</td><td><span class="pill u">roadmap</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 7 · INVITATION -->
+<h2 id="build"><span class="n">7</span>Help build it</h2>
+<p class="sub">This is early, and the whole point is for others to take it further.</p>
+<div class="card cta">
+  <p class="quote">“Design intent can be made checkable.” That small bet is the entire
+  project. The pieces that would make it a standard — a shared check library, a portable
+  spec format, CI that enforces design, a benchmark for judge accuracy — do not exist yet.</p>
+  <h3>If the premise is right, the interesting work is barely started.</h3>
+  <p class="muted" style="margin:.2em 0 0">You don’t need permission to build on this. Fork it,
+  rename it, take the idea further than we did. The only ask: keep it honest, and keep it generic.</p>
+  <div class="row">
+    <a class="btn" href="https://github.com/codedoodler/spec-check">Fork on GitHub</a>
+    <a class="btn alt" href="../VISION.md">Read the vision</a>
+    <a class="btn alt" href="../CONTRIBUTING.md">Contribute</a>
+    <a class="btn alt" href="IDEAS.md">Browse ideas</a>
+  </div>
+  <div class="note">Two bundled checks, a toy example, and ~10 small modules — readable in an
+  afternoon, extendable in a dozen directions.</div>
+</div>
+
+<footer>
+  <b>spec-check</b> — stdlib only, Python 3.8+. Read more:
+  <a href="../VISION.md">vision</a> ·
+  <a href="OVERVIEW.md">overview</a> ·
+  <a href="ARCHITECTURE.md">architecture</a> ·
+  <a href="SPEC-FORMAT.md">spec format</a> ·
+  <a href="WRITING-CHECKS.md">writing checks</a> ·
+  <a href="LLM-GUIDE.md">agent guide</a> ·
+  <a href="IDEAS.md">ideas</a> ·
+  <a href="../CONTRIBUTING.md">contributing</a> ·
+  <a href="ROADMAP.md">roadmap</a>.
+</footer>
+
+</div>
+</body>
+</html>
