@@ -42,6 +42,7 @@ python3 server.py --root examples/target      # browsable UI on :8090
 
 - `VISION.md` — the purpose and the invitation (why this exists, where it could go)
 - `docs/VISION.md` — the full system vision: ingest → model → resolve → conform → enforce → history
+- `docs/vision.html` — the vision as a standalone charted webpage (no CDN)
 - `docs/REQUIREMENTS-MODEL.md` — the requirements model: tiers, conflicts, precedence, priority
 - `docs/OVERVIEW.md` — the problem and the idea
 - `docs/ARCHITECTURE.md` — pipeline, modules, JSON contracts

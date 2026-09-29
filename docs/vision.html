@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The living design contract — the spec-check vision</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --border:#e3e7ee; --ink:#1b2432; --muted:#5a6472;
+    --accent:#2563eb; --green:#16a34a; --amber:#d97706; --red:#dc2626; --purple:#7c3aed;
+    --soft:#f0f3f8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px 80px}
+  header.hero{padding:56px 0 30px; border-bottom:1px solid var(--border)}
+  .eyebrow{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--purple); font-weight:700}
+  h1{font-size:42px; line-height:1.1; margin:.28em 0 .2em; letter-spacing:-.02em}
+  .lede{font-size:19px; color:var(--muted); max-width:760px}
+  .nav{margin-top:22px; display:flex; flex-wrap:wrap; gap:10px}
+  .nav a{font-size:14px; text-decoration:none; color:var(--ink); background:var(--card);
+    border:1px solid var(--border); padding:7px 12px; border-radius:999px}
+  .nav a:hover{border-color:var(--accent); color:var(--accent)}
+  h2{font-size:25px; margin:56px 0 6px; letter-spacing:-.01em}
+  h2 .n{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:10px}
+  .sub{color:var(--muted); margin:0 0 18px; max-width:760px}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px}
+  .pill.a{background:#eef2ff; color:var(--accent)} .pill.b{background:#e7f6ec; color:var(--green)}
+  .pill.c{background:#fdf1dc; color:var(--amber)} .pill.d{background:#ece9fb; color:var(--purple)}
+  /* vertical 7-stage flow */
+  .flow{display:flex; flex-direction:column; gap:0}
+  .stage{display:grid; grid-template-columns:52px 1fr; gap:16px; align-items:start}
+  .stage .badge{width:44px; height:44px; border-radius:12px; background:var(--soft); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-weight:750; color:var(--accent); font-size:16px}
+  .stage .body{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:15px 17px; margin-bottom:6px}
+  .stage .body .t{font-weight:700; margin:0 0 2px}
+  .stage .body .d{font-size:14.5px; color:var(--muted); margin:0}
+  .conn{width:2px; height:16px; background:var(--border); margin-left:21px}
+  table{width:100%; border-collapse:collapse; font-size:14.5px}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:9px 16px; font-size:14.5px}
+  .kv b{font-weight:700}
+  .note{font-size:13px; color:var(--muted); margin-top:10px}
+  .quote{font-size:20px; font-style:italic; color:#334155; border-left:3px solid var(--purple);
+    padding-left:16px; margin:0 0 22px}
+  .src{border:1px dashed var(--border); border-radius:11px; padding:12px 14px; background:#fbfcfe}
+  .src .t{font-weight:650; font-size:14.5px}
+  .src .d{font-size:13px; color:var(--muted)}
+  .principle{border-left:3px solid var(--accent); padding:4px 0 4px 14px; margin:14px 0}
+  .principle b{display:block}
+  .cta{background:linear-gradient(135deg,#eef3ff,#f7f0ff); border:1px solid #dbe3f5}
+  .cta h3{margin:.1em 0 .3em}
+  .cta .row{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .btn{display:inline-block; padding:10px 16px; border-radius:10px; text-decoration:none;
+    font-weight:650; font-size:14.5px; background:var(--ink); color:#fff}
+  .btn.alt{background:#fff; color:var(--ink); border:1px solid var(--border)}
+  footer{margin-top:64px; padding-top:22px; border-top:1px solid var(--border); color:var(--muted); font-size:14px}
+  footer a{color:var(--accent); text-decoration:none}
+  footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">The vision</div>
+  <h1>The living design contract</h1>
+  <p class="lede">A system that reads every place your design is written down, keeps the
+  requirements current, checks the spec against itself, and holds the code to it —
+  continuously, from the first decision to the last commit.</p>
+  <div class="nav">
+    <a href="#problem">The problem</a>
+    <a href="#bet">The bet</a>
+    <a href="#loop">The loop</a>
+    <a href="#model">Requirements model</a>
+    <a href="#resolve">Conflicts &amp; priority</a>
+    <a href="#enforce">Enforcement</a>
+    <a href="#history">History</a>
+    <a href="#principles">Principles</a>
+    <a href="#build">Build it</a>
+    <a href="../VISION.md">Manifesto&nbsp;↗</a>
+  </div>
+</header>
+
+<!-- 1 · PROBLEM -->
+<h2 id="problem"><span class="n">1</span>The problem: the one thing nothing checks</h2>
+<p class="sub">Type checkers catch syntax drift. Linters catch style drift. Tests catch the
+behaviour you thought to encode. Nothing reads the <em>design</em> and asks whether it still holds.</p>
+
+<div class="card">
+<svg viewBox="0 0 960 210" width="100%" role="img" aria-label="Coverage chart: syntax, style and behaviour are checked; design intent is not">
+  <!-- axis -->
+  <line x1="70" y1="170" x2="910" y2="170" stroke="#dbe1ea" stroke-width="2"/>
+  <text x="70" y="196" font-size="12.5" fill="#5a6472">syntax</text>
+  <text x="300" y="196" font-size="12.5" fill="#5a6472">style</text>
+  <text x="520" y="196" font-size="12.5" fill="#5a6472">behaviour</text>
+  <text x="770" y="196" font-size="12.5" fill="#5a6472">design intent</text>
+  <!-- covered bars -->
+  <rect x="70" y="52" width="150" height="118" rx="7" fill="#d7f0e0"/>
+  <text x="145" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">covered</text>
+  <rect x="300" y="60" width="150" height="110" rx="7" fill="#d7f0e0"/>
+  <text x="375" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">covered</text>
+  <rect x="520" y="78" width="150" height="92" rx="7" fill="#d7f0e0"/>
+  <text x="595" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">covered</text>
+  <!-- gap -->
+  <rect x="770" y="150" width="150" height="20" rx="7" fill="#fbdada"/>
+  <text x="845" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">nothing</text>
+  <text x="845" y="88" text-anchor="middle" font-size="12.5" fill="#94a3b8" font-style="italic">written once,</text>
+  <text x="845" y="106" text-anchor="middle" font-size="12.5" fill="#94a3b8" font-style="italic">then it rots</text>
+</svg>
+<div class="note">The system passes review on Monday. By Wednesday a change has violated a
+decision nobody remembers making — and the diff looks ordinary. When code can be rewritten in
+seconds, checking design intent stops being a nuisance and becomes <b>the</b> maintenance problem.</div>
+</div>
+
+<!-- 2 · BET -->
+<h2 id="bet"><span class="n">2</span>The bet</h2>
+<p class="sub">Design intent can be made checkable — and once it is, it can be maintained
+automatically, from every source, forever.</p>
+<div class="grid3">
+  <div class="card">
+    <div class="pill a">1</div>
+    <p style="font-weight:700;margin:.6em 0 .3em">Every decision carries a Check</p>
+    <p class="muted" style="font-size:14.5px;margin:0">The concrete thing you would look at to
+    decide conformance. A requirement you cannot answer yes/no to is not a requirement yet — it is a wish.</p>
+  </div>
+  <div class="card">
+    <div class="pill b">2</div>
+    <p style="font-weight:700;margin:.6em 0 .3em">Layers of trust</p>
+    <p class="muted" style="font-size:14.5px;margin:0">Deterministic checks where the rule is
+    mechanical, an LLM only where judgment is genuinely required, and a verifier that won't let
+    the model lie confidently.</p>
+  </div>
+  <div class="card">
+    <div class="pill d">3</div>
+    <p style="font-weight:700;margin:.6em 0 .3em">"Unverifiable" is an answer</p>
+    <p class="muted" style="font-size:14.5px;margin:0">A tool built for trust must never guess.
+    If it can't confirm something, it says so and hands it back.</p>
+  </div>
+</div>
+
+<!-- 3 · LOOP -->
+<h2 id="loop"><span class="n">3</span>The whole loop</h2>
+<p class="sub">Each stage is useful alone. Together they turn a pile of scattered decisions
+into a contract the codebase is continuously held to.</p>
+<div class="card">
+<div class="flow">
+
+  <div class="stage"><div class="badge">1</div><div class="body">
+    <p class="t">Ingest — continuously, from everywhere</p>
+    <p class="d">Meeting recordings, issue trackers, email, chat, discussion boards, specs, PRDs,
+    ADRs, and files in the repo. Each statement becomes a <span class="mono">[REQ]</span> (a must)
+    or an <span class="mono">[INTENT]</span> (a motivation), source-linked.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">2</div><div class="body">
+    <p class="t">Model — the living requirements list</p>
+    <p class="d">Deduplicated into four tiers, each with importance, status, and a
+    What / Why / Check. Precedence is explicit: recent-wins, and supersede — never silently delete.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">3</div><div class="body">
+    <p class="t">Resolve — the spec checks itself</p>
+    <p class="d">Contradiction, supersession, duplication, ambiguity, orphan, staleness. Plus a
+    derived priority ranking, so effort goes where it matters.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">4</div><div class="body">
+    <p class="t">Conform — is the code still the design?</p>
+    <p class="d">Deterministic checks settle the mechanical rules; an LLM judge reads the
+    semantics; an evidence verifier catches overconfident verdicts. Each requirement ends
+    <b>pass · warn · fail · unverifiable</b>.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">5</div><div class="body">
+    <p class="t">Enforce — act on every change</p>
+    <p class="d">On a pull request, push, or CI run: <b>block</b> a failing critical requirement,
+    or <b>warn</b> — and always update the running violation tally.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">6</div><div class="body">
+    <p class="t">Present — for humans and machines</p>
+    <p class="d">A charted HTML view for people; structured JSON and an agent-readable entry
+    point for machines.</p></div></div>
+  <div class="conn"></div>
+
+  <div class="stage"><div class="badge">7</div><div class="body">
+    <p class="t">Remember — the history of evolution</p>
+    <p class="d">Every requirement's lifecycle, with source and date at each transition, and a
+    time-travel view: what did the design say on a given date?</p></div></div>
+
+</div>
+</div>
+
+<!-- 4 · MODEL -->
+<h2 id="model"><span class="n">4</span>The requirements model</h2>
+<p class="sub">A requirement is a small, checkable object — not a paragraph in a wiki.</p>
+<div class="grid2">
+  <div class="card">
+    <p style="font-weight:700;margin:0 0 10px">Four tiers, four bars</p>
+    <table>
+      <tr><th>Tier</th><th>Holds</th><th>Testable</th></tr>
+      <tr><td><b>A</b> aspirational</td><td>the guiding light — a goal, not a rule</td><td>no</td></tr>
+      <tr><td><b>B</b> principles</td><td>invariants; violating one is a defect</td><td>conceptually</td></tr>
+      <tr><td><b>C</b> component</td><td>what each part of the system must do</td><td>yes</td></tr>
+      <tr><td><b>D</b> testable</td><td>each becomes a test</td><td>mechanically</td></tr>
+    </table>
+    <div class="note">The tiers matter because they are held to different bars — an aspirational
+    goal can be partly met and still on track; a violated principle is a defect by definition.</div>
+  </div>
+  <div class="card">
+    <p style="font-weight:700;margin:0 0 10px">Anatomy of a requirement</p>
+    <div class="kv" style="font-size:13.5px">
+      <b>id</b><span class="mono">API-2</span>
+      <b>tier / importance</b><span class="mono">B · critical</span>
+      <b>what</b><span>the requirement, one imperative sentence</span>
+      <b>why</b><span>the intent it protects</span>
+      <b>check</b><span>the concrete thing to look at — answerable yes/no</span>
+      <b>source</b><span>which meeting, document, or ticket</span>
+      <b>status</b><span class="mono">active</span>
+    </div>
+    <div class="note"><b>The Check field is the whole point.</b> Walk the list and any Check you
+    cannot answer yes/no to is a red flag that the requirement is still too vague to enforce.</div>
+  </div>
+</div>
+
+<!-- 5 · RESOLVE -->
+<h2 id="resolve"><span class="n">5</span>The spec checks itself</h2>
+<p class="sub">A growing list will contradict itself. So the design is checked against itself, and
+every conflict has a defined handling.</p>
+<div class="card">
+<table>
+  <tr><th>Conflict</th><th>Meaning</th><th>Handling</th></tr>
+  <tr><td><b>Contradiction</b></td><td>two active requirements cannot both hold</td><td>precedence; escalate if tied</td></tr>
+  <tr><td><b>Supersession</b></td><td>a newer decision overrides an older one</td><td>mark the older <i>superseded</i>, keep it</td></tr>
+  <tr><td><b>Duplicate</b></td><td>the same requirement stated twice</td><td>merge, union the sources</td></tr>
+  <tr><td><b>Ambiguity</b></td><td>a Check with two defensible readings</td><td>rewrite the Check to be binary</td></tr>
+  <tr><td><b>Orphan</b></td><td>no owner, no check, nothing implements it</td><td>flag; assign or retire</td></tr>
+  <tr><td><b>Staleness</b></td><td>code no longer honours it and nobody re-affirmed</td><td>re-affirm or retire</td></tr>
+</table>
+<div class="note"><b>Precedence rule:</b> the most recent ruling from a named authority wins; the
+loser is marked superseded and kept, never silently deleted. Anything the rule cannot settle is
+escalated as an open question — not guessed.</div>
+</div>
+<div class="card" style="margin-top:18px">
+  <p style="font-weight:700;margin:0 0 8px">Priority, derived — not hand-waved</p>
+  <p class="mono" style="background:var(--soft); padding:12px 14px; border-radius:10px; margin:0">
+  priority ≈ importance × tier_weight × dependency_count × violation_risk</p>
+  <div class="note">Critical outranks high outranks medium; principles outrank component detail; how
+  much else breaks if it is violated; and how likely it is to drift, from the running tally. The
+  design tells you what to fix first.</div>
+</div>
+
+<!-- 6 · ENFORCE -->
+<h2 id="enforce"><span class="n">6</span>Enforcement: a gate, not a report</h2>
+<p class="sub">When code is submitted — whatever the resolution — the checks run against the
+change, and the system decides what to do about it.</p>
+<div class="grid2" style="margin-bottom:18px">
+  <div class="card">
+    <p style="font-weight:700;margin:0 0 6px"><span class="pill f" style="background:#fdeaea;color:#dc2626">BLOCK</span></p>
+    <p class="muted" style="font-size:14.5px;margin:0">A failing <b>critical</b> requirement stops the
+    change — as a required status check. Drift never reaches the branch.</p>
+  </div>
+  <div class="card">
+    <p style="font-weight:700;margin:0 0 6px"><span class="pill w" style="background:#fdf1dc;color:#d97706">WARN + TALLY</span></p>
+    <p class="muted" style="font-size:14.5px;margin:0">A lesser violation is recorded, and the
+    <b>running tally</b> is updated: which requirement, how often, trending how.</p>
+  </div>
+</div>
+<div class="card">
+<svg viewBox="0 0 960 230" width="100%" role="img" aria-label="Line chart: the running violation tally climbing sprint over sprint — design drift made visible">
+  <line x1="70" y1="180" x2="910" y2="180" stroke="#dbe1ea" stroke-width="2"/>
+  <line x1="70" y1="30" x2="70" y2="180" stroke="#dbe1ea" stroke-width="2"/>
+  <!-- gridlines -->
+  <line x1="70" y1="142" x2="910" y2="142" stroke="#eef1f6"/>
+  <line x1="70" y1="105" x2="910" y2="105" stroke="#eef1f6"/>
+  <line x1="70" y1="67" x2="910" y2="67" stroke="#eef1f6"/>
+  <text x="60" y="184" text-anchor="end" font-size="11.5" fill="#94a3b8">0</text>
+  <text x="60" y="146" text-anchor="end" font-size="11.5" fill="#94a3b8">10</text>
+  <text x="60" y="109" text-anchor="end" font-size="11.5" fill="#94a3b8">20</text>
+  <text x="60" y="71" text-anchor="end" font-size="11.5" fill="#94a3b8">30</text>
+  <!-- trend -->
+  <polyline points="70,165 189,155 307,160 426,140 544,120 663,105 781,70 900,45"
+    fill="none" stroke="#dc2626" stroke-width="3" stroke-linejoin="round"/>
+  <g fill="#dc2626">
+    <circle cx="70" cy="165" r="4"/><circle cx="189" cy="155" r="4"/><circle cx="307" cy="160" r="4"/>
+    <circle cx="426" cy="140" r="4"/><circle cx="544" cy="120" r="4"/><circle cx="663" cy="105" r="4"/>
+    <circle cx="781" cy="70" r="4"/><circle cx="900" cy="45" r="4"/>
+  </g>
+  <text x="490" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">violations drift upward, sprint over sprint</text>
+  <text x="910" y="200" text-anchor="end" font-size="12" fill="#5a6472">sprints →</text>
+</svg>
+<div class="note">The tally is the real asset: it turns "the design is drifting" into a number you
+can watch, per requirement, over time. The sharpest signal is <b>passing on Monday, failing on
+Wednesday</b> — a requirement that <i>was</i> conformant and no longer is, which regresses against
+the design and should alert like one.</div>
+</div>
+
+<!-- 7 · HISTORY -->
+<h2 id="history"><span class="n">7</span>The history of evolution</h2>
+<p class="sub">The design is not a snapshot. Every transition is recorded, so the list is a record
+you can trust and audit — not a mystery.</p>
+<div class="card">
+<svg viewBox="0 0 960 150" width="100%" role="img" aria-label="Lifecycle: a requirement is introduced, amended, superseded, and retired, each with a date">
+  <line x1="80" y1="84" x2="880" y2="84" stroke="#dbe1ea" stroke-width="3"/>
+  <g font-size="13">
+    <circle cx="150" cy="84" r="9" fill="#16a34a"/>
+    <text x="150" y="52" text-anchor="middle" font-weight="700" fill="#1b2432">introduced</text>
+    <text x="150" y="112" text-anchor="middle" fill="#5a6472">source + date</text>
+
+    <circle cx="400" cy="84" r="9" fill="#2563eb"/>
+    <text x="400" y="52" text-anchor="middle" font-weight="700" fill="#1b2432">amended</text>
+    <text x="400" y="112" text-anchor="middle" fill="#5a6472">why it changed</text>
+
+    <circle cx="650" cy="84" r="9" fill="#d97706"/>
+    <text x="650" y="52" text-anchor="middle" font-weight="700" fill="#1b2432">superseded</text>
+    <text x="650" y="112" text-anchor="middle" fill="#5a6472">points to its replacement</text>
+
+    <circle cx="860" cy="84" r="9" fill="#94a3b8"/>
+    <text x="860" y="52" text-anchor="middle" font-weight="700" fill="#1b2432">retired</text>
+    <text x="860" y="112" text-anchor="middle" fill="#5a6472">kept, not deleted</text>
+  </g>
+</svg>
+<div class="note">This yields two things almost nobody has today: an <b>audit trail</b> — who decided
+what, when, and based on which meeting or document — and <b>time-travel</b>: what did the design say
+on this date, and what changed since?</div>
+</div>
+
+<!-- 8 · PRINCIPLES -->
+<h2 id="principles"><span class="n">8</span>The principles</h2>
+<p class="sub">Any contribution should protect these.</p>
+<div class="card">
+  <div class="principle"><b>Measured, not typed.</b> <span class="muted">Prefer observing the real
+  system over trusting a declaration.</span></div>
+  <div class="principle"><b>Never guess.</b> <span class="muted">If it can't be confirmed, say
+  <i>unverifiable</i> and hand it back.</span></div>
+  <div class="principle"><b>Deterministic first.</b> <span class="muted">The cheapest, most certain
+  method that works; an LLM only for genuine judgment.</span></div>
+  <div class="principle"><b>Supersede, don't delete.</b> <span class="muted">History is the point;
+  a silent removal destroys the audit.</span></div>
+  <div class="principle"><b>Honest about limits.</b> <span class="muted">A tool for trust must not
+  overstate what it knows.</span></div>
+</div>
+
+<!-- 9 · CTA -->
+<h2 id="build"><span class="n">9</span>Help build it</h2>
+<div class="card cta">
+  <h3>If the premise is right, almost none of this is built yet.</h3>
+  <p class="muted" style="margin:.2em 0 0">You don't need permission to build on it. Fork it, rename
+  it, take it further than we did — and keep it honest and generic.</p>
+  <div class="row">
+    <a class="btn" href="https://github.com/codedoodler/spec-check">Fork on GitHub</a>
+    <a class="btn alt" href="VISION.md">Read the full vision</a>
+    <a class="btn alt" href="REQUIREMENTS-MODEL.md">The requirements model</a>
+    <a class="btn alt" href="IDEAS.md">Browse ideas</a>
+  </div>
+</div>
+
+<footer>
+  <b>spec-check</b> — stdlib only, Python 3.8+. Read more:
+  <a href="index.html">overview</a> ·
+  <a href="VISION.md">full vision</a> ·
+  <a href="REQUIREMENTS-MODEL.md">requirements model</a> ·
+  <a href="../VISION.md">manifesto</a> ·
+  <a href="ROADMAP.md">roadmap</a> ·
+  <a href="../CONTRIBUTING.md">contributing</a>
+</footer>
+
+</div>
+</body>
+</html>
